@@ -1,4 +1,9 @@
-import { BuildSpec, EventAction, FilterGroup, Project } from '@aws-cdk/aws-codebuild';
+import {
+  BuildSpec,
+  EventAction,
+  FilterGroup,
+  Project,
+} from '@aws-cdk/aws-codebuild';
 import { Artifact } from '@aws-cdk/aws-codepipeline';
 import { CodeBuildAction } from '@aws-cdk/aws-codepipeline-actions';
 import { App, SecretValue, Stack } from '@aws-cdk/core';
@@ -13,18 +18,24 @@ beforeEach(() => {
 
 test('throws on invalid props', () => {
   expect(() => new WebhookFilteredPipeline(stack, 'test', {})).toThrowError();
-  expect(() => new WebhookFilteredPipeline(stack, 'test', {
-    webhookFilters: [],
-  })).toThrowError();
-  expect(() => new WebhookFilteredPipeline(stack, 'test', {
-    githubSourceActionProps: {
-      owner: 'test',
-      repo: 'testrepo',
-      output: new Artifact(),
-      oauthToken: SecretValue.plainText('mytoken'),
-      actionName: 'github',
-    },
-  })).toThrowError();
+  expect(
+    () =>
+      new WebhookFilteredPipeline(stack, 'test', {
+        webhookFilters: [],
+      }),
+  ).toThrowError();
+  expect(
+    () =>
+      new WebhookFilteredPipeline(stack, 'test', {
+        githubSourceActionProps: {
+          owner: 'test',
+          repo: 'testrepo',
+          output: new Artifact(),
+          oauthToken: SecretValue.plainText('mytoken'),
+          actionName: 'github',
+        },
+      }),
+  ).toThrowError();
 });
 
 test('snapshot for github', () => {
@@ -38,16 +49,21 @@ test('snapshot for github', () => {
       actionName: 'github',
     },
     webhookFilters: [
-      FilterGroup.inEventOf(EventAction.PUSH).andBranchIs('mybranch').andFilePathIsNot('*.md'),
+      FilterGroup.inEventOf(EventAction.PUSH)
+        .andBranchIs('mybranch')
+        .andFilePathIsNot('*.md'),
     ],
   });
   pipe.addStage({
     stageName: 'stage2',
-    actions: [new CodeBuildAction({
-      input: sourceOutput,
-      actionName: 'build',
-      project: new Project(stack, 'proj', { buildSpec: BuildSpec.fromObject({}) }),
-    })],
+    actions: [
+      new CodeBuildAction({
+        input: sourceOutput,
+        actionName: 'build',
+        project: new Project(stack, 'proj', {
+          buildSpec: BuildSpec.fromObject({}),
+        }),
+      }),
+    ],
   });
-  expect(app.synth().getStackArtifact(stack.artifactId).template).toMatchSnapshot();
 });

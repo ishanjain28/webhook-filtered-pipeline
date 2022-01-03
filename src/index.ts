@@ -1,6 +1,15 @@
-import { BuildSpec, FilterGroup, ISource, Project, Source } from '@aws-cdk/aws-codebuild';
+import {
+  BuildSpec,
+  FilterGroup,
+  ISource,
+  Project,
+  Source,
+} from '@aws-cdk/aws-codebuild';
 import { Pipeline, PipelineProps } from '@aws-cdk/aws-codepipeline';
-import { GitHubSourceAction, GitHubSourceActionProps, GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions';
+import {
+  GitHubSourceAction,
+  GitHubSourceActionProps,
+} from '@aws-cdk/aws-codepipeline-actions';
 import { Effect, PolicyStatement } from '@aws-cdk/aws-iam';
 import { Construct } from '@aws-cdk/core';
 
@@ -49,22 +58,30 @@ export interface WebhookFilteredPipelineProps extends PipelineProps {
  * pipeline's source stage yourself.
  */
 export class WebhookFilteredPipeline extends Pipeline {
-  private _starterProject: Project
-  private _githubSourceAction: GitHubSourceAction | undefined
-  constructor(scope: Construct, id: string, props: WebhookFilteredPipelineProps) {
+  private _starterProject: Project;
+  private _githubSourceAction: GitHubSourceAction | undefined;
+  constructor(
+    scope: Construct,
+    id: string,
+    props: WebhookFilteredPipelineProps,
+  ) {
     super(scope, id, props);
     const { source, webhookFilters, githubSourceActionProps } = props;
     if (!source && (!githubSourceActionProps || !webhookFilters)) {
-      throw Error('You must set EITHER source OR githubSourceActionProps and webhookfilters');
+      throw Error(
+        'You must set EITHER source OR githubSourceActionProps and webhookfilters',
+      );
     }
     this._starterProject = new Project(this, `${id}-starter`, {
-      source: source ?? Source.gitHub({
-        owner: githubSourceActionProps!.owner,
-        repo: githubSourceActionProps!.repo,
-        branchOrRef: githubSourceActionProps!.branch,
-        webhook: webhookFilters ? true : false,
-        webhookFilters,
-      }),
+      source:
+        source ??
+        Source.gitHub({
+          owner: githubSourceActionProps!.owner,
+          repo: githubSourceActionProps!.repo,
+          branchOrRef: githubSourceActionProps!.branch,
+          webhook: webhookFilters ? true : false,
+          webhookFilters,
+        }),
       buildSpec: BuildSpec.fromObject({
         version: '0.2',
         phases: {
@@ -74,25 +91,20 @@ export class WebhookFilteredPipeline extends Pipeline {
             },
           },
           build: {
-            commands: [`aws codepipeline start-pipeline-execution --name ${this.pipelineName}`],
+            commands: [
+              `aws codepipeline start-pipeline-execution --name ${this.pipelineName}`,
+            ],
           },
         },
       }),
     });
-    this._starterProject.addToRolePolicy(new PolicyStatement({
-      actions: ['codepipeline:StartPipelineExecution'],
-      resources: [this.pipelineArn],
-      effect: Effect.ALLOW,
-    }));
-    if (githubSourceActionProps) {
-      this.addStage({
-        stageName: 'Source',
-        actions: [new GitHubSourceAction({
-          ... githubSourceActionProps,
-          trigger: GitHubTrigger.NONE, // so it is only started by the starter project
-        })],
-      });
-    }
+    this._starterProject.addToRolePolicy(
+      new PolicyStatement({
+        actions: ['codepipeline:StartPipelineExecution'],
+        resources: [this.pipelineArn],
+        effect: Effect.ALLOW,
+      }),
+    );
   }
   /**
    * The CodeBuild project that starts the pipeline
